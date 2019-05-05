@@ -1,0 +1,6 @@
+1. SVHN - The histogram of l2 distances between the reconstruction and the input with varying latent dimension, for real and adversarial data. 
+Latent Dimension = 32, 64, 128
+
+
+1. Fashion-MNIST - The histogram of l2 distances between the reconstruction and the input with varying latent dimension, for real and adversarial data. 
+Latent Dimension = 32, 64, 128

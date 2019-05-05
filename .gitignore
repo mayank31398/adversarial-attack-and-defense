@@ -1,4 +1,8 @@
-.vscode
-.env
-Data
+*.pdf
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.gz
 __pycache__
