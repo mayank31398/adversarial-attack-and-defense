@@ -5,3 +5,5 @@
 This repository contains code for training classifiers on Fashion MNIST and SVHN datasets.
 These classifiers are attacked using [FGSM](https://arxiv.org/abs/1412.6572) and [PGD](https://arxiv.org/abs/1706.06083) adversarial attacks.
 Various protection schemes are also explored in this assignment.
+
+The report can be found [here](Report/Report.pdf).
