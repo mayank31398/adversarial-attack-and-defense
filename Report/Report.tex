@@ -4,11 +4,9 @@
 \usepackage{amssymb}
 \usepackage{bm}
 \usepackage{booktabs}
-\usepackage{float}
 \usepackage{subcaption}
 \usepackage{hyperref}
 \usepackage{svg}
-\usepackage{dblfloatfix}
 
 \newcommand{\bx}{\bm{x}}
 \newcommand{\by}{\bm{y}}
@@ -17,7 +15,6 @@
 \newcommand{\bphi}{\bm{\phi}}
 
 \DeclareMathOperator{\expectation}{\mathbb{E}}
-\DeclareMathOperator*{\argmin}{argmin}
 
 \begin{document}
 
@@ -28,7 +25,7 @@
 \maketitle
 
 \begin{abstract}
-Deep neural networks have been enormously successful across a variety of classification tasks. However, recent research shows that DNNs are vulnerable to adversarial attacks, which pose a serious threat. In this paper, we propose a simple yet effective defense algorithm Adversarial Error Correction that uses variational autoencoder (VAE) to filter out adversarial noise from input images to a classifier. The proposed method is generic and can defend white-box attacks without the need of retraining the original CNN classifiers, and can further strengthen the defense by.
+Deep neural networks have been enormously successful across a variety of classification tasks. However, recent research shows that DNNs are vulnerable to adversarial attacks, which pose a serious threat. In this paper, we propose a simple yet effective defense algorithm Adversarial Error Correction that uses variational autoencoder (VAE) to filter out adversarial noise from input images to a classifier. The proposed method is generic and can defend white-box attacks without the need of retraining the original CNN classifiers, and can further strengthen the defense.
 \end{abstract}
 
 \section{Introduction}
@@ -39,14 +36,14 @@ Machine learning models are vulnerable to these small perturbations. Such exampl
 
 \section{Adversarial attacks}
 \subsection{Fast Gradient Sign Method (FGSM)}
-FGSM\cite{FGSM} is a single step attack. Let $L(\bx, \by)$ be the loss function of the classifier C given input $\bx$ and label $\by$. FGSM defines the perturbation $\bm{\rho}$ as
+FGSM\cite{FGSM} is a single step attack. Let $L(\bx, \by)$ be the loss function of the classifier C given input $\bx$ and target label $\by$. FGSM defines the perturbation $\bm{\rho}$ as
 \begin{equation}
 	\bm{\rho} = \epsilon \times sign(\nabla_{\bx} L(\bx, \by))
 \end{equation}
 where $\epsilon$ is a small factor. FGSM simply chooses the sign of change at each pixel to increase the loss $L(\bx, \by)$ and fool the classifier.
 
 \subsection{Projected Gradient Descent}
-PGD\cite{PGD} is a more powerful multi-step attack with projected gradient descent.
+PGD\cite{PGD} is a more powerful multi-step attack with projected gradient descent. Projected gradient descent performs one step of standard gradient descent, and then clips all the coordinates to be within the box for box-constrained numerical optimization. 
 \begin{equation}
 	\begin{aligned}
 		& \bx_0^{PGD} = \bx
@@ -57,19 +54,42 @@ PGD\cite{PGD} is a more powerful multi-step attack with projected gradient desce
 where $\prod_S$ is the projection onto $S = \{\bx' : ||\bx' - \bx||_{\infty} \leq \epsilon\}$.
 
 \section{Variational Autoencoders}
-Generative models have gained a lot of success since the advent of deep neural networks. In particular, GANs\cite{GAN} and VAEs\cite{VAE} have been used to model highly complex distributions whose implicit expressions might be intractable. It can be easily shown that the log likelihood of the data can be written as
+Generative models have gained a lot of success since the advent of deep neural networks. In particular, GANs\cite{GAN} and VAEs\cite{VAE} have been used to model highly complex distributions whose implicit expressions might be intractable. We can obtain a lower bound on the log likelihood of the data as
 \begin{equation}
 	\log p(\bx) \geq -KL[q_{\bphi}(\bz | \bx) || p_{\btheta}(\bz)] + \expectation_{q_{\bphi}(\bz | \bx)}[\log p_{\btheta}(\bx | \bz)]
 \end{equation}
 
-To achieve the goal maximizing the log-likelihood, one can simply maximize a lower bound, evidence lower bound (ELBO) on the log-likelihood. This can be done by using a VAE.
+To achieve the goal of maximizing the log-likelihood, one can simply maximize a lower bound, evidence lower bound (ELBO) on the log-likelihood. This can be done by using a VAE.
+
+\section{Adversarial error correction}
+We leverage the expressive capability of VAEs for defense mechanism. Our proposed method is generic and can defend white-box and black-box attacks and no online iterative optimisation is involved.
+
+We modify the VAE objective (that preserves the adversarial perturbations in reconstruction) to the one which constructs the corresponding clean image, enabling to correctly label the adversarial image.
+
+An adversarial example is passed through a VAE whose encoder is K-Lipschitz. From a coding theory perspective, we claim that latent representation codes for the adversarial and clean image will be closed in latent space when the encoder is K-Lipschitz. 
+
+\begin{equation}
+    \begin{aligned}
+        \bz \sim & \operatorname{Enc}(\hat{\bx})=q(\bz | \hat{\bx})
+        \\
+        \bx \sim & \operatorname{Dec}(\bz)=p(\bx | \bz)
+        \\
+        \mathcal{L}= & -\expectation_{q(\bz | \hat{\bx})}\left[\log \frac{p(\bx | \bz) p(\bz)}{q(\bz | \hat{\bx})}\right]
+        \\
+        = & -\expectation_{q(\boldsymbol{z} | \hat{\bx})}[\log p(\bx | \bz)] + KL(q(\bz | \hat{\bx}) || p(\bz))
+    \end{aligned}
+\end{equation}
+
+where $\hat{\bx} = \bx + \boldsymbol{\delta}$ is an adversarial image with $\delta$-perturbation added on top of a clean image $\bx$. This adversarial
+image is encoded to a latent variable $\bz$, which is decoded
+to the underlying clean image $\bx$.
 
 \section{Experiments and results}
 \subsection{Datasets}
 For the purpose of this paper, we experimented on the Fashion MNIST dataset (black and white images of the dimension $28 \times 28$) and the SVHN dataset (coloured images of the dimension $32 \times 32$). Both datasets have 10 ground truth classes.
 
 \subsection{Adversarial attacks}
-We perform the two mentioned adversarial attacks in this paper i.e FGSM\cite{FGSM} and PGD\cite{PGD}. The resulting images generated using FGSM for Fashion MNIST are shown in Fig. \ref{fig: FMNIST_FGSM}. The resulting images generated using PGD for Fashion MNIST are shown in Fig. \ref{fig: FMNIST_PGD} and for SVHN in Fig. \ref{fig: SVHN_PGD}.
+We perform the two mentioned adversarial attacks in this paper i.e FGSM\cite{FGSM} and PGD\cite{PGD}. The resulting images generated using FGSM for Fashion MNIST are shown in Fig. \ref{fig:FMNISTFGSM}. The resulting images generated using PGD for Fashion MNIST are shown in Fig. \ref{fig:FMNISTPGD} and for SVHN in Fig. \ref{fig:SVHNPGD}.
 
 \subsection{Defense mechanisms}
 We try out two defense mechanisms to protect our classifiers as discussed below:
@@ -78,10 +98,14 @@ We try out two defense mechanisms to protect our classifiers as discussed below:
 We do adversarial retraining of the classifiers. Basically, in this approach the classifier are retrained on the adversarial examples.
 
 \subsubsection{Adversarial error correction}
+An adversarial example is passed through a VAE whose encoder is K-Lipschitz. From a coding theory perspective, we claim that latent representation codes for the adversarial and clean image will be closed in latent space when the encoder is K-Lipschitz. We experiment with both gradient norm penalty and gradient clipping for imposing Lipschitz constraint on encoder, and found the former to be giving slightly better results experimentally. Results in the table are reported with gradient norm penalty.
+
+Our method can also be used as a simple detection mechanism to detect if an input image contains adversarial perturbations or not. This can be done by comparing the MSE between reconstructed image and the original image. If an image does contain adversarial perturbation, then this MSE measure will be relatively large as compared to when the image doesn’t contain adversarial perturbations (refer Fig. \ref{fig:distance}). Assuming perfect VAE, the exact added $\delta$-perturbation must be recovered after reconstruction. We set a criteria on this difference to detect the adversarial example, and results for the same has been reported in the table.
+
 In this approach the adversarial examples are passed through a VAE whose encoder is K-Lipschitz. The claim is that if the encoder is K-Lipschitz the adversarial examples and the real examples would be close enough in the latent space. This Lipshitz contraint on the encoder is imposed by having a gradient penalty on the encoder.
 
 \subsection{Further studies}
-It is further seen that as the dimensionality of the latent space is increased the adversarial examples and the real data come closer in the latent space. (See Fig. \ref{fig: distance})
+It is further seen that as the dimensionality of the latent space is increased the adversarial examples and the real data come closer in the latent space. (See Fig. \ref{fig:distance})
 
 \begin{table*}[t]
 	\caption{Accuracy on Fashion MNIST with and without defense mechanisms}
@@ -152,11 +176,11 @@ It is further seen that as the dimensionality of the latent space is increased t
 
 	\caption{Fashion MNIST dataset comparing original and adversarial examples generated using FGSM\cite{FGSM} attack}
 	
-	\label{fig: FMNIST_FGSM}
+	\label{fig:FMNISTFGSM}
 \end{figure*}
 
 \section{Conclusion}
-In this paper, we have proposed a simple yet effective defense algorithm Adversarial Error Correction that uses a variational autoencoder (VAE) to filter out adversarial noise from input images to a classifier. The proposed method is generic and can defend white-box attacks without the need of retraining the original classifiers, and can further strengthen the defense.
+In this paper, we have proposed a simple yet effective defense algorithm Adversarial Error Correction that uses a variational autoencoder (VAE) to filter out adversarial noise from input images to a classifier. The proposed method is generic and can defend white-box and black-box attacks without the need of retraining the original classifiers, and can further strengthen the defense.
 
 \bibliographystyle{ieeetr}
 \bibliography{references}
@@ -178,7 +202,7 @@ In this paper, we have proposed a simple yet effective defense algorithm Adversa
 
 	\caption{Fashion MNIST dataset comparing original and adversarial examples generated using PGD\cite{PGD} attack}
 
-	\label{fig: FMNIST_PGD}
+	\label{fig:FMNISTPGD}
 \end{figure*}
 
 \begin{figure*}[t]
@@ -198,7 +222,7 @@ In this paper, we have proposed a simple yet effective defense algorithm Adversa
 
 	\caption{SVHN dataset comparing original and adversarial examples generated using PGD\cite{PGD} attack}
 	
-	\label{fig: SVHN_PGD}
+	\label{fig:SVHNPGD}
 \end{figure*}
 
 \begin{figure*}[t]
@@ -219,7 +243,7 @@ In this paper, we have proposed a simple yet effective defense algorithm Adversa
 
 	\caption{x-axis is the $L_2$ norm of the real and adversarial latent spaces and y-axis is the number of samples. Clearly, the peaks come closer as the latent dimesionality increased. Latent dimensionality increases from left to right (32, 64, 128).}
 	
-	\label{fig: distance}
+	\label{fig:distance}
 \end{figure*}
 
 \end{document}
